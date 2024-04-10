@@ -346,6 +346,10 @@ func BuildDict(o BuildDictOptions) ([]byte, error) {
 			nUsed = 1
 		}
 	}
+	if nUsed < 1 {
+		nUsed = 1 // macneale4 - probably not right. Just to avoid div by zero.
+	}
+
 	copyHist := func(dst *fseEncoder, src *[256]int) ([]byte, error) {
 		hist := dst.Histogram()
 		var maxSym uint8
