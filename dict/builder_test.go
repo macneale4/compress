@@ -2,6 +2,8 @@ package dict
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 	"math/rand"
 	"os"
@@ -69,6 +71,34 @@ func testZStdDict(t *testing.T, level zstd.EncoderLevel) {
 	t.Log("Total compressed size:", totalSize)
 }
 
+func TestTwoDoltSamples(t *testing.T) {
+	testTwoDoltSamples(t, 0, 1)
+	testTwoDoltSamples(t, 2, 3)
+}
+
+func testTwoDoltSamples(t *testing.T, from, to int) {
+	sample0, err := loadSampleFile(from)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	sample1, err := loadSampleFile(to)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	o := Options{
+		MaxDictSize: 2048,
+		HashBytes:   6,
+	}
+
+	samples := [][]byte{sample0, sample1}
+
+	_, err = BuildZstdDict(samples, o)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+}
+
 func zCompressDict(dst, dict, data []byte) ([]byte, error) {
 	encoder, err := zstd.NewWriter(nil, zstd.WithEncoderDict(dict))
 	if err != nil {
@@ -114,4 +144,28 @@ func generateRandomByteSlice(seed int64, len int) []byte {
 		data[i] = byte(r.Int63())
 	}
 	return data
+}
+
+func loadSampleFile(id int) ([]byte, error) {
+	// macneale4 - I believe there is test infra for testdata, but I'll start by keeping this simple.
+	f, err := os.Open(fmt.Sprintf("sample_%d.bin", id))
+	if err != nil {
+		return nil, err
+	}
+
+	stat, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+
+	sz := stat.Size()
+	result := make([]byte, sz)
+	n, err := f.Read(result)
+	if err != nil {
+		return nil, err
+	}
+	if int(sz) != n {
+		return nil, errors.New("short read")
+	}
+	return result, nil
 }
