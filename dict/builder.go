@@ -139,7 +139,7 @@ func buildDict(input [][]byte, o Options) ([]byte, error) {
 	println("\nTotal", total, "match", len(matches), "avg", threshold)
 	sorted := make([]match, 0, len(matches)/2)
 	for k, v := range matches {
-		if v <= threshold {
+		if v < threshold {
 			continue
 		}
 		sorted = append(sorted, match{hash: k, n: v, offset: offsets[k]})
